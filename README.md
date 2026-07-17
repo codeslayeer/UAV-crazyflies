@@ -50,7 +50,7 @@ Fichiers produits : `benchmark_obstacles.csv` et `mission_3d.png`.
 
 > Plus `--rrt-iterations` est grand, plus RRT* peut améliorer sa route, mais plus le calcul est long.
 
-## 4. Campagne complète pour le rapport
+## 4. Campagne complète 
 
 Validation rapide :
 
@@ -63,6 +63,22 @@ Campagne recommandée :
 ```bash
 python crazyflie_experiment_suite.py --profile standard --repetitions 5 --output rapport_resultats
 ```
+
+## 5. Benchmark radio
+
+```bash
+python crazyflie_radio_benchmark.py --trials 1000 --output radio_resultats
+```
+
+Fichiers produits : `radio_results.csv` et `radio_benchmark.png`. Importez cette image dans Overleaf avec les autres figures. Les paramètres de propagation sont des hypothèses à calibrer ; consulter `REFERENCES.md`.
+
+## 6. Prototype RL (Q-learning)
+
+```bash
+python crazyflie_rl_qlearning.py --episodes 5000 --output rl_resultats
+```
+
+Ce prototype apprend une liaison unique départ-capteur dans une scène 3D fixe et la compare à A*. Il produit `rl_training.png`, `rl_scene.png` et `rl_metrics.csv`. Il sert de base expérimentale avant une version RL complète pour toute la mission multi-capteurs.
 
 Campagne lourde :
 
