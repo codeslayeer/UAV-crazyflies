@@ -1,103 +1,57 @@
-# Simulation Crazyflie — commandes
+# Crazyflie Station-Tour via Reinforcement Learning (PyBullet)
 
-## Préparation
+Un drone **Crazyflie** apprend, par **PPO** (reinforcement learning), à
+**visiter 5 stations en 3D puis revenir à son point de départ**, dans le
+simulateur **PyBullet**. Basé sur
+[`learnsyslab/gym-pybullet-drones`](https://github.com/learnsyslab/gym-pybullet-drones).
 
-Depuis le dossier contenant les scripts :
+## Fichiers du projet (ajouts)
+| Fichier | Rôle |
+|---|---|
+| `gym_pybullet_drones/envs/StationTourAviary.py` | Environnement Gym custom + `TargetAugmentWrapper` |
+| `examples/learn_tour.py`  | Entraînement PPO — 2 stations (curriculum) |
+| `examples/learn_tour_5.py`| Warm-start du modèle 2-stations → 5 stations |
+| `examples/play_tour.py`   | Visualisation 3D (mettre `NUM_STATIONS = 2` ou `5`) |
+| `pretrained/best_model_ns5.zip` | Modèle 5-stations **déjà entraîné** |
 
+## Installation (⚠️ lire attentivement)
 ```bash
-pip install numpy matplotlib
+git clone https://github.com/TON_USER/crazyflie-station-tour-rl.git
+cd crazyflie-station-tour-rl
+conda create -n drones python=3.10
+conda activate drones
+pip install -e .
+pip install "setuptools<81"   # OBLIGATOIRE : sinon "No module named 'pkg_resources'"
+pip install tensorboard       # OBLIGATOIRE pour l'entraînement (pas pour play)
 ```
 
-## 1. Simulation 3D simple (capteurs, retour à la base)
-
+## Voir le résultat SANS entraîner (30 s)
 ```bash
-python crazyflie_sensor_mission.py
+cd gym_pybullet_drones/examples
+python play_tour.py           # NUM_STATIONS=5 par défaut -> charge pretrained/
 ```
+Le drone (sphère cyan) fait HOME 🟢 → 5 stations 🟠 → HOME 🟢,
+guidé par le trait rouge. ~80 % de tours complets.
 
-Modifiez les paramètres directement dans la classe `Config` : nombre de capteurs, vitesse, accélération, durée de collecte et graine aléatoire.
-
-## 2. Benchmark sans obstacles
-
-Test rapide :
-
+## Ré-entraîner (optionnel)
 ```bash
-python crazyflie_benchmark.py --missions 10 --sensors 6 --output resultats_benchmark
+python learn_tour.py          # 2 stations  (TOTAL_TIMESTEPS dans le fichier)
+python learn_tour_5.py        # warm-start -> 5 stations
 ```
+Monitorer : `tensorboard --logdir results`  puis  http://localhost:6006
 
-Campagne plus robuste :
+## Résultat typique (5 stations)
+- Taux de tours complets : **~80 %**
+- Reward tour parfait (`cible 6/6`) : **+60**
+- Méthode : curriculum (2→5) + warm-start + reward shaping + démarrage en vol
 
-```bash
-python crazyflie_benchmark.py --missions 100 --sensors 8 --output resultats_benchmark
-```
-
-Fichiers produits : `benchmark.csv` et `benchmark.png`.
-
-## 3. Comparaison A* / RRT* avec obstacles 3D
-
-Exécution rapide :
-
-```bash
-python crazyflie_obstacles_benchmark.py --missions 1 --sensors 5 --obstacles 5 --rrt-iterations 300
-```
-
-Exécution intermédiaire :
-
-```bash
-python crazyflie_obstacles_benchmark.py --missions 5 --sensors 6 --obstacles 7 --rrt-iterations 600 --output resultats_obstacles
-```
-
-Fichiers produits : `benchmark_obstacles.csv` et `mission_3d.png`.
-
-> Plus `--rrt-iterations` est grand, plus RRT* peut améliorer sa route, mais plus le calcul est long.
-
-## 4. Campagne complète 
-
-Validation rapide :
-
-```bash
-python crazyflie_experiment_suite.py --profile quick --repetitions 2 --output rapport_resultats
-```
-
-Campagne recommandée :
-
-```bash
-python crazyflie_experiment_suite.py --profile standard --repetitions 5 --output rapport_resultats
-```
-
-## 5. Benchmark radio
-
-```bash
-python crazyflie_radio_benchmark.py --trials 1000 --output radio_resultats
-```
-
-Fichiers produits : `radio_results.csv` et `radio_benchmark.png`. Importez cette image dans Overleaf avec les autres figures. Les paramètres de propagation sont des hypothèses à calibrer ; consulter `REFERENCES.md`.
-
-## 6. Prototype RL (Q-learning)
-
-```bash
-python crazyflie_rl_qlearning.py --episodes 5000 --output rl_resultats
-```
-
-Ce prototype apprend une liaison unique départ-capteur dans une scène 3D fixe et la compare à A*. Il produit `rl_training.png`, `rl_scene.png` et `rl_metrics.csv`. Il sert de base expérimentale avant une version RL complète pour toute la mission multi-capteurs.
-
-Campagne lourde :
-
-```bash
-python crazyflie_experiment_suite.py --profile full --repetitions 5 --output rapport_resultats
-```
-
-Fichiers produits dans `rapport_resultats` :
-
-- `all_results.csv` : valeurs de chaque mission ;
-- `summary.csv` : moyennes et écarts-types ;
-- `summary.png` : comparaison globale A* / RRT* ;
-- `scene_*.png` : une image 3D par mission.
-
-
-## Ordre conseillé
-
-```bash
-python crazyflie_sensor_mission.py
-python crazyflie_obstacles_benchmark.py --missions 1 --rrt-iterations 300
-python crazyflie_experiment_suite.py --profile standard --repetitions 5 --output rapport_resultats
+## Citation du simulateur de base
+```bibtex
+@INPROCEEDINGS{panerati2021learning,
+  title={Learning to Fly---a Gym Environment with PyBullet Physics for
+         Reinforcement Learning of Multi-agent Quadcopter Control},
+  author={Panerati, Jacopo and Zheng, Hehui and Zhou, SiQi and Xu, James
+          and Prorok, Amanda and Schoellig, Angela P.},
+  booktitle={2021 IEEE/RSJ IROS}, year={2021}, pages={7512-7519},
+  doi={10.1109/IROS51168.2021.9635857}}
 ```
